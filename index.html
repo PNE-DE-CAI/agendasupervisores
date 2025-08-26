@@ -93,7 +93,7 @@
                                                 <option>Tarde</option>
                                                 <option>Noite</option>
                                             </select>
-                                            <select x-model="visit.location" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                            <select x-model="visit.location" class="block w-full mb-2 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                                                 <option value="">Selecione</option>
                                                 <optgroup label="Locais">
                                                     <template x-for="location in locations">
@@ -110,6 +110,14 @@
                                                     <option>NÃO SE APLICA</option>
                                                 </optgroup>
                                             </select>
+                                            <!-- Campo de Observações Adicionado -->
+                                            <label class="block text-sm font-medium text-gray-700 mt-2 mb-1">Observações</label>
+                                            <textarea 
+                                                x-model="visit.obs" 
+                                                placeholder="Adicione observações sobre esta visita" 
+                                                class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                                rows="2"
+                                            ></textarea>
                                         </div>
                                         <button @click="removeVisit(day, visitIndex)" class="ml-2 text-red-500 hover:text-red-700">
                                             <i class="fas fa-times"></i>
@@ -243,7 +251,7 @@
                 ],
                 locations: [
                     'E.E. ALADINO POLON',
-                    'E.E. ALBERTO GRAF – CAPITÃO',
+                    'E.E. ALBERTO GRAF – CAPITão',
                     'E.E. ALBINO FIORE',
                     'E.E. ALFRIED THEODOR WEISZFLOG',
                     'E.E. ARMANDO SESTINI',
@@ -375,7 +383,8 @@
                         day.visits.push({
                             period: '',
                             location: '',
-                            confirmed: false
+                            confirmed: false,
+                            obs: '' // Campo de observações adicionado
                         });
                     }
                 },
@@ -420,7 +429,8 @@
                                 visits: day.visits.map(visit => ({
                                     period: visit.period,
                                     location: visit.location,
-                                    confirmed: visit.confirmed
+                                    confirmed: visit.confirmed,
+                                    obs: visit.obs // Incluindo observações nos dados enviados
                                 }))
                             }))
                         };
