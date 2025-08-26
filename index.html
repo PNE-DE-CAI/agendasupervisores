@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Semanal de Supervisores</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .day-card {
+            transition: all 0.3s ease;
+        }
+        .day-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .visitation-option {
+            transition: all 0.2s ease;
+        }
+        .visitation-option:hover {
+            background-color: #f0f9ff;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8" x-data="app()" x-cloak>
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-blue-800">Agenda Semanal</h1>
+                    <p class="text-gray-600">Preencha sua agenda de visitas semanais</p>
+                </div>
+                <div class="w-full md:w-auto">
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <div class="flex flex-col space-y-2">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Supervisor</label>
+                                <select x-model="selectedSupervisor" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option value="">Selecione seu nome</option>
+                                    <template x-for="supervisor in supervisors">
+                                        <option x-text="supervisor" :value="supervisor"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Função</label>
+                                <select x-model="selectedFunction" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option value="">Selecione sua função</option>
+                                    <option>COORDENADOR GERAL (DIRIGENTE)</option>
+                                    <option>SUPERVISOR DE ENSINO</option>
+                                    <option>SUPERVISOR EDUCACIONAL</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Week Navigation -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">Semana de <span x-text="getCurrentWeekRange()"></span></h2>
+            <div class="flex space-x-2">
+                <button @click="previousWeek()" class="p-2 rounded-full bg-white shadow hover:bg-gray-100">
+                    <i class="fas fa-chevron-left text-blue-600"></i>
+                </button>
+                <button @click="nextWeek()" class="p-2 rounded-full bg-white shadow hover:bg-gray-100">
+                    <i class="fas fa-chevron-right text-blue-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Days Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+            <template x-for="(day, index) in days" :key="index">
+                <div class="day-card bg-white rounded-lg shadow overflow-hidden">
+                    <div class="bg-blue-600 px-4 py-2">
+                        <h3 class="text-lg font-semibold text-white" x-text="day.name"></h3>
+                        <p class="text-blue-100 text-sm" x-text="formatDate(day.date)"></p>
+                    </div>
+                    <div class="p-4">
+                        <div class="space-y-3">
+                            <template x-for="(visit, visitIndex) in day.visits" :key="visitIndex">
+                                <div class="visitation-option border border-gray-200 rounded p-3">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Local/Atividade</label>
+                                            <select x-model="visit.period" class="block w-full mb-2 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                                <option value="">Período</option>
+                                                <option>Manhã</option>
+                                                <option>Tarde</option>
+                                                <option>Noite</option>
+                                            </select>
+                                            <select x-model="visit.location" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                                <option value="">Selecione</option>
+                                                <optgroup label="Locais">
+                                                    <template x-for="location in locations">
+                                                        <option x-text="location" :value="location"></option>
+                                                    </template>
+                                                </optgroup>
+                                                <optgroup label="Atividades">
+                                                    <option>PONTO FACULTATIVO</option>
+                                                    <option>FERIADO</option>
+                                                    <option>ATIVIDADE EXTERNA: FORMAÇÃO EFAPE</option>
+                                                    <option>URE - EXPEDIENTE</option>
+                                                    <option>URE - PLANTÃO</option>
+                                                    <option>URE - REUNIÃO</option>
+                                                    <option>NÃO SE APLICA</option>
+                                                </optgroup>
+                                            </select>
+                                        </div>
+                                        <button @click="removeVisit(day, visitIndex)" class="ml-2 text-red-500 hover:text-red-700">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label class="inline-flex items-center">
+                                            <input type="checkbox" x-model="visit.confirmed" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            <span class="ml-2 text-sm text-gray-700">Confirmado</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <button @click="addVisit(day)" x-show="day.visits.length < 3" class="w-full flex items-center justify-center py-2 px-4 border border-dashed border-gray-300 rounded-md text-sm font-medium text-blue-600 hover:text-blue-800 hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <i class="fas fa-plus mr-2"></i>
+                                Adicionar Visita
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-8 flex justify-end space-x-4">
+            <button @click="clearAll()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Limpar Tudo
+            </button>
+            <button @click="saveSchedule()" :disabled="isSaving" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                <span x-show="!isSaving">Salvar Agenda</span>
+                <span x-show="isSaving">
+                    <i class="fas fa-spinner fa-spin mr-1"></i> Salvando...
+                </span>
+            </button>
+        </div>
+
+        <!-- Success Modal -->
+        <div x-show="showSuccessModal" class="fixed inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
+                    <div>
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                            <i class="fas fa-check text-green-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-5">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                Agenda salva com sucesso!
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">
+                                    Suas informações foram registradas no sistema.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-5 sm:mt-6">
+                        <button @click="showSuccessModal = false" type="button" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div x-show="showErrorModal" class="fixed inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full sm:p-6">
+                    <div>
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                            <i class="fas fa-exclamation-triangle text-red-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-5">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                Erro ao salvar agenda!
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500" x-text="errorMessage"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-5 sm:mt-6">
+                        <button @click="showErrorModal = false" type="button" class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm">
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        function app() {
+            return {
+                selectedSupervisor: '',
+                selectedFunction: '',
+                showSuccessModal: false,
+                showErrorModal: false,
+                errorMessage: '',
+                isSaving: false,
+                currentWeek: 0,
+                // URL do Google Apps Script Web App
+                googleScriptUrl: 'https://script.google.com/macros/s/AKfycbzvGZx_Jd8ywI0Myakcr10i42fbOu5l8kKUylmJWNcFhhiIoSZpX3lf0itxnQw7driE6g/exec',
+                supervisors: [
+                    'SUELI RODRIGUES DOS SANTOS REGO',
+                    'AGNES REGINA DE OLIVEIRA LEITE',
+                    'ANDRE CRISTIAN SOARES',
+                    'ANDREIA DE OLIVEIRA',
+                    'CATIA DE FREITAS OLIVEIRA',
+                    'CELSO DE JESUS NICOLETI',
+                    'CLAUDINEIA DE ALMEIDA PESSOA SILVA',
+                    'IRANAIA PECOTTI',
+                    'JAMES ERNESTO MAZZANTI',
+                    'JANAINA APARECIDA BATISTA',
+                    'JESSE PEREIRA FELIPE',
+                    'LELIA HARTMANN TORRES',
+                    'MARCIA MARIA VIEIRA DA MAIA',
+                    'MARIA AMELIA DE ABREU',
+                    'MARIA ISABEL R.G. BARBOSA',
+                    'NELSON PETZ JUNIOR',
+                    'ROGERIO CARLOS GONÇALVES',
+                    'SABRINA TEODORO RODRIGUES',
+                    'THIAGO SOARES QUINTEIRO G. SILVA',
+                    'VIVIANE COSTA SOUSA'
+                ],
+                locations: [
+                    'E.E. ALADINO POLON',
+                    'E.E. ALBERTO GRAF – CAPITÃO',
+                    'E.E. ALBINO FIORE',
+                    'E.E. ALFRIED THEODOR WEISZFLOG',
+                    'E.E. ARMANDO SESTINI',
+                    'E.E. FRANCISCO GONÇALVES VIEIRA – PROFº',
+                    'E.E. ISAÍAS LUIZ MATIAZZO',
+                    'E.E. ISAURA VALENTINI HANSER – PROFª',
+                    'E.E. JOSÉ CARLOS DA SILVA JUNIOR',
+                    'E.E. MARIO TOLEDO DE MORAES – DR.',
+                    'E.E. NELSON MANZANARES – DR.',
+                    'E.E. OLINDO DÁRTORA – DR.',
+                    'E.E. OTTO WEISZFLOG CEL',
+                    'CENTRO DE ESTUDOS DE LÍNGUAS',
+                    'E.E. WALTHER WEISZFLOG',
+                    'E.E. ANA MARIA GARRIDO ORLANDIN – PROF.ª',
+                    'E.E. ÉLCIO JOSÉ PEREIRA COTRIM – PROF.',
+                    'E.E. JOAQUIM MARQUES DA SILVA SOBRINHO – TTE.',
+                    'E.E. SUZANA DIAS',
+                    'E.E. WALTER RIBAS DE ANDRADE – PROF.',
+                    'E.E. AFONSO MORENO',
+                    'E.E. APARECIDO ROBERTO TONELLOTTI – PROF.',
+                    'E.E. BELÉM DA SERRA',
+                    'E.E. BUENO DE AZEVEDO FILHO – PROF.',
+                    'E.E. CELESTINA VALENTE LENGENFELDER – PROF.ª',
+                    'E.E. CHÁCARA CAMPONESA/ Jd Vassouras',
+                    'E.E. JARDIM ALEGRIA II',
+                    'E.E. JARDIM DAS ROSAS',
+                    'E.E. JARDIM SILVIA II',
+                    'E.E. JOSÉ DE BARROS MARTINS – EDITOR',
+                    'E.E. LENITA CORRÊA CAMARGO – PROF.ª',
+                    'E.E. LYDIA SCALET WALKER – PROF.ª',
+                    'E.E. PARQUE CENTO E VINTE II',
+                    'E.E. PEDRO PAULO AGUIAR',
+                    'E.E. ROGÉRIO LEVORIN – PROF.',
+                    'E.E. ULYSSES SANCHES RAMIRES – PROF.',
+                    'E.E. VINCENZO LOBASSI',
+                    'E.E. ADAIL JARBAS DUCLOS',
+                    'E.E. AZEVEDO SOARES',
+                    'E.E. BENEDITO APARECIDO TAVARES – PROF.',
+                    'FUNDAÇÃO CASA, UNIDADE DE INTERNAÇÃO JACARANDÁ – 21',
+                    'FUNDAÇÃO CASA, UNIDADE DE INTERNAÇÃO RIO NEGRO – 25',
+                    'FUNDAÇÃO CASA, UNIDADE DE INTERNAÇÃO NOVO TEMPO',
+                    'FUNDAÇÃO CASA, UNIDADE DE INTERNAÇÃO TAPAJÓS – 29',
+                    'FUNDAÇÃO CASA, INTERNATO FRANCO DA ROCHA',
+                    'E.E. BENEDITO FAGUNDES MARQUES',
+                    'E.E. DOMINGOS CAMBIAGHI – PROF.',
+                    'PENITENCIÁRIA NILTON SILVA CLASSES PROVISORIAS',
+                    'E.E. ELVIRA PARADA MANGA – PROF.ª',
+                    'E.E. IRACI SARTORI VIEIRA DA SILVA – PROF.ª',
+                    'E.E. ISAURA DE MIRANDA BOTTO – PROFª',
+                    'E.E. IVONE DOS ANJOS DA SILVA CAMPOS – PROF.ª',
+                    'E.E. JOCIMARA VIEIRA DA SILVA – PROF.ª',
+                    'E.E. KÁTIA MARIA TARIFA LEME TONELLI – PROF.ª',
+                    'E.E. LUIZ ALEXANDRE DOS SANTOS – VEREADOR',
+                    'E.E. JOSÉ PARADA – PROF.',
+                    'E.E. PAULO DUARTE',
+                    'E.E. PEDRO LELIS DE SOUZA – PREFEITO',
+                    'E.E. RITUCO MITANI – PROF.ª',
+                    'E.E. ZILTON BICUDO – PROF.',
+                    'E.E. ARTHUR WEINGRILL',
+                    'E.E. BAIRRO DO ITAIM',
+                    'E.E. BAIRRO JUNDIAIZINHO',
+                    'E.E. CARLOS AUGUSTO DE PÁDUA FLEURY – PROF.',
+                    'E.E. HERMELINA DE ALBUQUERQUE PASSARELLA – PROF.ª',
+                    'E.E. JARDIM SÃO FRANCISCO',
+                    'E.E. JOSÉ ROBERTO MELCHIOR – DR.',
+                    'E.E. MARIA ZEZA GOMES DE OLIVEIRA',
+                    'E.E. NAIR HANNICKEL ROMARO',
+                    'E.E. NIDE ZAIM CARDOSO – PROF.ª',
+                    'E.E. ODARICO OLIVEIRA NASCIMENTO – PROF.',
+                    'E.E. OZILDE ALBUQUERQUE PASSARELLA – DR.',
+                    'E.E. PEDRO GALRÃO DO NASCIMENTO',
+                    'E.E. PIETRO PETRI'
+                ],
+                days: [],
+                
+                init() {
+                    this.generateWeekDays();
+                },
+                
+                generateWeekDays() {
+                    const today = new Date();
+                    const currentDay = today.getDay(); // 0 (Domingo) a 6 (Sábado)
+                    const startDate = new Date(today);
+                    
+                    // Ajusta para começar na segunda-feira
+                    startDate.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1));
+                    
+                    // Ajusta para a semana selecionada
+                    startDate.setDate(startDate.getDate() + (this.currentWeek * 7));
+                    
+                    const weekDays = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+                    
+                    this.days = weekDays.map((day, index) => {
+                        const date = new Date(startDate);
+                        date.setDate(startDate.getDate() + index);
+                        
+                        return {
+                            name: day,
+                            date: date,
+                            visits: []
+                        };
+                    });
+                },
+                
+                formatDate(date) {
+                    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                    return date.toLocaleDateString('pt-BR', options);
+                },
+                
+                getCurrentWeekRange() {
+                    if (this.days.length === 0) return '';
+                    const start = this.days[0].date;
+                    const end = this.days[6].date;
+                    return `${this.formatDate(start)} a ${this.formatDate(end)}`;
+                },
+                
+                previousWeek() {
+                    this.currentWeek--;
+                    this.generateWeekDays();
+                },
+                
+                nextWeek() {
+                    this.currentWeek++;
+                    this.generateWeekDays();
+                },
+                
+                addVisit(day) {
+                    if (day.visits.length < 3) {
+                        day.visits.push({
+                            period: '',
+                            location: '',
+                            confirmed: false
+                        });
+                    }
+                },
+                
+                removeVisit(day, index) {
+                    day.visits.splice(index, 1);
+                },
+                
+                clearAll() {
+                    if (confirm('Tem certeza que deseja limpar toda a agenda?')) {
+                        this.days.forEach(day => {
+                            day.period = '';
+                            day.visits = [];
+                        });
+                    }
+                },
+                
+                async saveSchedule() {
+                    if (!this.selectedSupervisor || !this.selectedFunction) {
+                        this.showError('Por favor, selecione seu nome e função antes de salvar.');
+                        return;
+                    }
+                    
+                    // Verificar se há visitas cadastradas
+                    const hasVisits = this.days.some(day => day.visits.length > 0);
+                    if (!hasVisits) {
+                        this.showError('Por favor, adicione pelo menos uma visita antes de salvar.');
+                        return;
+                    }
+                    
+                    this.isSaving = true;
+                    
+                    try {
+                        // Preparar dados para envio
+                        const data = {
+                            supervisor: this.selectedSupervisor,
+                            function: this.selectedFunction,
+                            week: this.getCurrentWeekRange(),
+                            schedule: this.days.map(day => ({
+                                name: day.name,
+                                date: this.formatDate(day.date),
+                                visits: day.visits.map(visit => ({
+                                    period: visit.period,
+                                    location: visit.location,
+                                    confirmed: visit.confirmed
+                                }))
+                            }))
+                        };
+                        
+                        // Enviar dados para o Google Sheets via Google Apps Script
+                        const response = await fetch(this.googleScriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        // Como estamos usando no-cors, não podemos verificar a resposta
+                        // Mas assumimos que foi bem-sucedido se não houver erro de rede
+                        this.showSuccessModal = true;
+                        
+                    } catch (error) {
+                        console.error('Erro ao salvar:', error);
+                        this.showError('Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.');
+                    } finally {
+                        this.isSaving = false;
+                    }
+                },
+                
+                showError(message) {
+                    this.errorMessage = message;
+                    this.showErrorModal = true;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
